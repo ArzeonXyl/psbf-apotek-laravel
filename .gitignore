@@ -12,6 +12,7 @@
 .env                 # This ignores your actual .env file, crucial for security
 .env.backup
 .env.production      # Also ignores specific production environment files if they exist
+.env.example
 
 # Other development/IDE specific files
 .phpactor.json
