@@ -1,3 +1,4 @@
+# Ignored files/directories that are typically generated or environment-specific
 /.phpunit.cache
 /node_modules
 /public/build
@@ -6,9 +7,13 @@
 /storage/*.key
 /storage/pail
 /vendor
-.env
+
+# Environment specific files
+.env                 # This ignores your actual .env file, crucial for security
 .env.backup
-.env.production
+.env.production      # Also ignores specific production environment files if they exist
+
+# Other development/IDE specific files
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -21,3 +26,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Keep .env.example tracked for project setup instructions
+# This line is NOT in the .gitignore, allowing .env.example to be committed
