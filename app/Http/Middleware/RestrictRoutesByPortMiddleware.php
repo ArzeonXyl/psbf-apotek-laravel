@@ -4,59 +4,101 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response; // Pastikan Response di-import
+use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 class RestrictRoutesByPortMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $port = $request->getPort();
+        $path = $request->path(); // Dapatkan path aktual, misal 'admin/login' atau 'admin'
+        Log::info("RestrictMiddleware ENTRY: Port={$port}, Path='{$path}'");
 
-        // Izinkan semua request ke endpoint Livewire lewat dulu untuk kesederhanaan.
-        // Idealnya, penanganan Livewire juga bisa lebih spesifik,
-        // tapi untuk awal ini kita biarkan agar tidak memblokir fungsi Livewire di Toko maupun Filament.
+        // Izinkan semua permintaan Livewire terlepas dari port, untuk kesederhanaan awal.
         if ($request->is('livewire/*')) {
+            Log::info("RestrictMiddleware: Allowing livewire/* path for '{$path}'.");
             return $next($request);
         }
 
-        // Aturan untuk Port 8001 (Toko)
+        // Logika untuk Port Apoteker/Toko (8001)
         if ($port == 8001) {
-            // Path yang diizinkan untuk Toko
-            $isTokoPath = $request->is('/') || $request->is('produk/*');
-            // Path yang seharusnya tidak diakses di port Toko
-            $isNonTokoPathAttempt = $request->is('admin*') ||
-                                    $request->is('login') ||
-                                    $request->is('register') ||
-                                    $request->is('dashboard'); // Dashboard Breeze
+            Log::info("RestrictMiddleware: Processing Apoteker Port (8001) rules for path '{$path}'.");
 
-            if (!$isTokoPath && $isNonTokoPathAttempt) {
-                abort(404, 'Halaman Admin/Autentikasi tidak dapat diakses di port Toko (8001).');
+            // Daftar path yang SECARA EKSPLISIT DILARANG di port 8001
+            $forbiddenPathsOnTokoPort = [
+                'admin',        // Untuk /admin
+                'admin/*',      // Untuk semua di bawah /admin
+                'login',
+                'register',
+                'forgot-password',
+                'reset-password',
+                'email/verification-notification',
+                'verify-email',
+                'confirm-password',
+                'dashboard'     // Dashboard Breeze
+            ];
+
+            foreach ($forbiddenPathsOnTokoPort as $forbiddenPath) {
+                if ($request->is($forbiddenPath)) {
+                    Log::info("RestrictMiddleware: Port 8001 - Path '{$path}' (Admin/Auth path) is EXPLICITLY BLOCKED.");
+                    abort(404, "Halaman '{$path}' tidak dapat diakses di port Apoteker (8001).");
+                }
             }
-            // Jika bukan path Toko dan bukan path Admin/Auth (misal path aneh), biarkan routing Laravel yang handle
-            // atau bisa juga langsung abort(404) jika ingin lebih ketat hanya $isTokoPath yang boleh.
-            // Untuk sekarang, kita fokus memblokir yang jelas salah.
+
+            // Daftar path yang SECARA EKSPLISIT DIIZINKAN di port 8001
+            $allowedTokoPaths = [
+                '/',         // Halaman utama Toko
+                'produk',    // Halaman daftar produk jika ada (misal /produk)
+                'produk/*'   // Halaman detail produk (misal /produk/nama-obat)
+            ];
+
+            $isAllowed = false;
+            foreach ($allowedTokoPaths as $allowedPath) {
+                if ($request->is(trim($allowedPath, '/')) || $request->is(trim($allowedPath, '/') . '/*')) {
+                    $isAllowed = true;
+                    break;
+                }
+            }
+
+            if ($isAllowed) {
+                Log::info("RestrictMiddleware: Port 8001 - Path '{$path}' is ALLOWED for Apoteker.");
+                return $next($request); // Jika path diizinkan, lanjutkan dan keluar dari middleware
+            }
+
+            // Jika path tidak ada di daftar yang dilarang dan tidak ada di daftar yang diizinkan,
+            // anggap sebagai path tidak dikenal dan blokir untuk keamanan.
+            Log::info("RestrictMiddleware: Port 8001 - Path '{$path}' (Unspecified/Forbidden path) is BLOCKED.");
+            abort(404, "Halaman '{$path}' tidak dapat diakses di port Apoteker (8001).");
 
         }
-        // Aturan untuk Port 8000 (Admin/Kasir/Autentikasi)
+        // Logika untuk Port Kasir/Admin/Auth (8000)
         elseif ($port == 8000) {
-            // Path Toko yang seharusnya tidak diakses di port Admin/Kasir
-            $isTokoPathAttempt = $request->is('/') || $request->is('produk/*');
+            Log::info("RestrictMiddleware: Processing Kasir Port (8000) rules for path '{$path}'.");
+            
+            // Path Toko yang seharusnya diblokir di port Kasir/Admin
+            $isTokoPathAttempt = $request->is('/') || $request->is('produk') || $request->is('produk/*');
 
             if ($isTokoPathAttempt) {
-                abort(404, 'Halaman Toko tidak dapat diakses di port Admin/Kasir (8000).');
+                Log::info("RestrictMiddleware: Port 8000 - Path '{$path}' (Apoteker/Toko path) is BLOCKED for Kasir.");
+                abort(404, "Halaman Apoteker/Toko ('{$path}') tidak dapat diakses di port Kasir (8000).");
+            } else {
+                // Semua path lain (misalnya, /admin, /login, dll.) diizinkan untuk Kasir di port 8000.
+                Log::info("RestrictMiddleware: Port 8000 - Path '{$path}' is ALLOWED for Kasir.");
+                return $next($request); // Jika path diizinkan, lanjutkan dan keluar dari middleware
             }
-            // Rute lain seperti /admin, /login, /dashboard akan diizinkan secara implisit
-            // karena tidak ada kondisi blokir spesifik untuk mereka di port 8000 ini.
+        }
+        // Untuk port lain yang tidak secara spesifik ditangani
+        else {
+            Log::info("RestrictMiddleware: Port {$port} ('{$path}') not specifically handled, allowing request.");
         }
 
-        // Jika tidak ada aturan blokir yang cocok di atas, lanjutkan permintaan
+        // Jika tidak ada kondisi di atas yang mengembalikan response atau abort, lanjutkan permintaan.
+        // Namun, idealnya setiap cabang kondisi port harus memiliki return $next($request) atau abort().
+        // Baris ini sebagai fallback jika logika port tidak mencakup semuanya (misalnya port selain 8000/8001)
+        // atau jika sebuah kondisi port tidak secara eksplisit mengizinkan/memblokir.
+        // Untuk port 8000 dan 8001, kita sudah punya return/abort di dalam kondisinya.
+        Log::info("RestrictMiddleware EXIT: Path='{$path}' on Port={$port} - Fallback or allowed, proceeding.");
         return $next($request);
     }
 }
