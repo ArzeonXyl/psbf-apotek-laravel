@@ -1,4 +1,9 @@
 <x-guest-layout>
+    {{-- Pastikan skrip lottie-player dimuat. Taruh di head atau sebelum </body> --}}
+    @push('scripts')
+        <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    @endpush
+
     {{-- Container utama untuk dua card (deskripsi di kiri, form di kanan) --}}
     {{-- Ini adalah div yang sekarang mengontrol lebar max-w-6xl dan layout grid --}}
     <div class="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 rounded-xl shadow-2xl overflow-hidden">
@@ -6,8 +11,15 @@
         {{-- Kolom Kiri: Deskripsi dengan Background Gradient Hijau yang "Nendang" --}}
         {{-- Order md:order-1 agar di mobile tetap di atas (form), tapi di desktop pindah ke kiri --}}
         <div class="bg-gradient-to-br from-primary to-primary-dark p-8 md:p-12 flex flex-col justify-center items-center text-white text-center order-2 md:order-1">
-            {{-- Ikon FontAwesome Apotek --}}
-            <i class="fas fa-prescription-bottle-alt text-6xl mb-6"></i> {{-- Ikon disesuaikan untuk login --}}
+            {{-- Ganti Ikon FontAwesome dengan Lottie Player --}}
+            <lottie-player
+                src="{{ asset('storage/img/Logo-ObatQu.json')}}" {{-- Pastikan path ke file JSON sudah benar --}}
+                background="transparent"
+                speed="1"
+                loop
+                autoplay
+                style="width: 200px; height: 200px; margin-bottom: 24px;" {{-- Sesuaikan ukuran dan margin --}}
+            ></lottie-player>
 
             <h2 class="text-4xl font-extrabold mb-4 leading-tight">
                 Selamat Datang Kembali

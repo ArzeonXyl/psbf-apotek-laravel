@@ -16,7 +16,7 @@
 
 /* --- CSS BARU UNTUK SVG WAVE (seperti yang sudah saya berikan sebelumnya) --- */
 .wave-svg-container {
-    height: 150px; /* Sesuaikan tinggi gelombang SVG ini */
+    height: 100px; /* Sesuaikan tinggi gelombang SVG ini */
     bottom: -1px; /* Bantu menutup celah kecil di bawah */
     /* Pastikan position: absolute, left: 0, width: 100%, z-index: 0 sudah ada di kelas Tailwind di HTML */
     /* Hapus 'overflow-hidden' dari sini untuk debugging sementara, nanti bisa dikembalikan jika perlu */
