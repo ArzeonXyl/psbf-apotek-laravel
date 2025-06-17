@@ -54,12 +54,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function() {
         // Ini bisa menjadi halaman dashboard umum atau halaman error jika role tidak terdefinisi
         return view('dashboard'); // Pastikan Anda memiliki view 'dashboard.blade.php'
+
     })->name('dashboard');
 
     // Profile routes (umum untuk semua user yang login)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/apoteker/orders', OrderDashboard::class)->name('apoteker.orders.dashboard');
 });
 
 // ==========================
