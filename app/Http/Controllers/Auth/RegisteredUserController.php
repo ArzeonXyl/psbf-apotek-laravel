@@ -33,8 +33,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', 'in:admin,apoteker'],
-
+            'role' => ['required', 'string', 'in:admin,apoteker,kasir'], // Tambahkan 'kasir' jika ada
         ]);
 
         $user = User::create([
@@ -48,6 +47,16 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // --- LOGIKA PENGALIHAN BERDASARKAN ROLE ---
+        if ($user->role === 'admin' || $user->role === 'kasir') {
+            // Jika role adalah 'admin' atau 'kasir', arahkan ke /admin
+            return redirect('/admin');
+        } elseif ($user->role === 'apoteker') {
+            // Jika role adalah 'apoteker', arahkan ke /apoteker/dashboard
+            return redirect('/apoteker/dashboard');
+        }
+        
+        // Fallback jika ada role lain (seharusnya tidak terjadi karena validasi)
+        return redirect('/dashboard');
     }
 }

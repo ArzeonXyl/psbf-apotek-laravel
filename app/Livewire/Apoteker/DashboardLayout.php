@@ -11,12 +11,11 @@ class DashboardLayout extends Component
 
     public function logout()
     {
-        Auth::logout();
+        auth()->logout();
         session()->invalidate();
         session()->regenerateToken();
-        return redirect()->to('/login'); // Redirect ke halaman login setelah logout
+        return $this->redirect('/', navigate: true);
     }
-
     public function render()
     {
         return view('livewire.apoteker.dashboard-layout');
