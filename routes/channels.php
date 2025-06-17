@@ -1,21 +1,30 @@
 <?php
 
-// routes/channels.php
-
 use Illuminate\Support\Facades\Broadcast;
-use Illuminate\Support\Facades\Log;
+use App\Models\User; // <-- PASTIKAN MODEL USER DI-IMPORT
 
-// ... (channel App.Models.User.{id} jika ada) ...
-
-// Broadcast::channel('filament.orders', function ($user) {
-//     Log::info('Attempting to authorize filament.orders channel for user:', ['user_id' => $user->id ?? 'guest', 'roles' => $user ? implode(', ', $user->getRoleNames()->toArray()) : 'none']); // Log roles
-
-//     // Contoh: Izinkan user yang memiliki peran 'admin' atau 'kasir'
-//     $isAuthorized = ($user && ($user->hasRole('admin') || $user->hasRole('kasir'))); // Sesuaikan dengan implementasi peran Anda
-
-//     Log::info('Authorization result for filament.orders:', ['user_id' => $user->id ?? 'guest', 'can_access' => $isAuthorized]);
-//     return $isAuthorized;
-// });
-Broadcast::channel('filament.orders', function () {
-    return true;
+/**
+ * Otorisasi untuk channel notifikasi privat per pengguna.
+ * INI SANGAT PENTING UNTUK MENGATASI ERROR 403 DI FILAMENT.
+ * Ini mengizinkan pengguna untuk mendengarkan di channel mereka sendiri (misal: App.Models.User.1).
+ */
+Broadcast::channel('App.Models.User.{id}', function (User $user, int $id) {
+    return (int) $user->id === (int) $id;
 });
+
+/**
+ * Otorisasi untuk channel 'filament.orders' (versi aman).
+ * Hanya mengizinkan pengguna yang sudah login dan memiliki peran tertentu.
+ */
+Broadcast::channel('filament.orders', function (User $user) {
+    // Sesuaikan daftar peran yang boleh mengakses channel ini
+    return in_array($user->role, ['admin', 'kasir', 'apoteker']);
+});
+
+/**
+ * Jika Anda punya channel 'apoteker-channel' untuk notifikasi order baru,
+ * Anda bisa menambahkannya juga di sini jika ingin menjadikannya privat.
+ */
+// Broadcast::channel('apoteker-channel', function (User $user) {
+//     return in_array($user->role, ['apoteker', 'admin']);
+// });

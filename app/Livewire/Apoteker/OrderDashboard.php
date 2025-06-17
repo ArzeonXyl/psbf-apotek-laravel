@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Events\OrderStatusUpdated; // Event ini di-import dan digunakan
 // use App\Events\NewOrderCreated; // Event ini tidak digunakan langsung di sini, bisa dihapus atau tetap sebagai referensi
-
+use App\Models\User; // <-- Tambahkan ini untuk mengambil data user Kasir
+use Filament\Notifications\Notification; // <-- Tambahkan ini untuk membuat notifikasi Filament
 
 class OrderDashboard extends Component
 {
@@ -159,6 +160,29 @@ class OrderDashboard extends Component
             DB::rollBack(); // Melakukan rollback transaksi jika terjadi exception
             Log::error("Exception saat ACC order ID {$orderId}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             $this->dispatch('notify', message: "Terjadi error sistem saat memproses order.", type: 'error');
+        }
+    }
+    public function sendTestNotificationToKasir(): void
+    {
+        // Ganti '2' dengan ID user Kasir Anda yang sebenarnya
+        $kasirUser = User::find(2); 
+
+        if ($kasirUser) {
+            // Membuat notifikasi Filament
+            Notification::make()
+                ->title('Notifikasi Tes dari Apoteker')
+                ->body('Ini adalah pesan tes real-time yang dikirim ke panel Filament!')
+                ->success() // Notifikasi berwarna hijau
+                ->sendToDatabase($kasirUser) // (Opsional) Simpan notif ke database Kasir
+                ->broadcast($kasirUser);    // <-- INI KUNCINYA: Menyiarkan notif ke user Kasir via Reverb
+
+            // Memberi feedback di halaman Apoteker bahwa notifikasi telah dikirim
+            $this->dispatch('notify', message: 'Notifikasi tes berhasil dikirim ke Kasir.', type: 'success');
+            Log::info("TES: Notifikasi dikirim ke Kasir ID: " . $kasirUser->id);
+
+        } else {
+            $this->dispatch('notify', message: 'Error: User Kasir dengan ID 2 tidak ditemukan.', type: 'error');
+            Log::error("TES GAGAL: User Kasir dengan ID 2 tidak ditemukan.");
         }
     }
 

@@ -301,13 +301,21 @@ class OrderResource extends Resource
 
         return $data;
     }
+    
 
     // Mengaktifkan refresh otomatis tabel daftar order ketika status order berubah (misalnya dari 'baru' ke 'selesai')
-    protected static function getLivewireListeningBindings(): array
+    // protected static function getListeners(): array
+    // {
+    //     return [
+    //         // Mendengarkan event 'status.updated' pada channel 'filament.orders'
+    //         'echo:apoteker-channel,order.baru' => '$refresh',
+    //     ];
+    // }
+    // Method listener di dalam OrderResource.php
+    protected static function getListeners(): array
     {
         return [
-            // Mendengarkan event 'status.updated' pada channel 'filament.orders'
-            'echo:filament.orders,status.updated' => '$refresh',
+            'echo:apoteker-channel,order.baru' => '$refresh',
         ];
     }
 }
