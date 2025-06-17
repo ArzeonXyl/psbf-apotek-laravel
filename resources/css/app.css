@@ -1,3 +1,22 @@
+/* resources/css/app.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    /* >>> PERUBAHAN DI SINI: GRADIENT UNTUK TOMBOL <<< */
+    @apply bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-md px-6 py-3 transition ease-in-out duration-300;
+    /* Efek hover: reverse gradient */
+    @apply hover:from-primary-dark hover:to-primary;
+  }
+
+  .input-custom {
+    @apply border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+  }
+
+  /* >>> BARU: Kelas untuk Link Teks Berwarna <<< */
+  .link-text-primary {
+    @apply text-primary hover:text-primary-dark transition duration-150 ease-in-out;
+  }
+}

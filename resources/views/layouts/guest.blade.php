@@ -7,24 +7,23 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
+        {{-- Font Awesome CDN sudah dikomentari, pastikan sudah diimport via NPM/app.css jika diperlukan --}}
+        {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0ot92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR3+tf/F6Y5B5A==" crossorigin="anonymous" referrerpolicy="no-referrer" /> --}}
+
+        {{-- Ini adalah tempat untuk @vite dan @livewireStyles --}}
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @livewireStyles {{-- PASTIKAN INI ADA UNTUK CSS LIVEWIRE --}}
     </head>
     <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-                </a>
-            </div>
-
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white dark:bg-gray-800 shadow-md overflow-hidden sm:rounded-lg">
-                {{ $slot }}
-            </div>
+        {{-- Kontainer ini akan memusatkan blok dua kolom di tengah halaman --}}
+        <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4 sm:p-6 lg:p-8">
+            {{ $slot }}
         </div>
+
+        {{-- INI SANGAT PENTING: @livewireScripts HARUS ADA DI SINI UNTUK JAVASCRIPT LIVEWIRE/ALPINE --}}
+        @livewireScripts
     </body>
 </html>

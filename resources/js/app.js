@@ -1,7 +1,8 @@
 import './bootstrap';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
-import Alpine from 'alpinejs';
+// import Alpine from 'alpinejs';
 
-window.Alpine = Alpine;
+// window.Alpine = Alpine;
 
-Alpine.start();
+// Alpine.start();

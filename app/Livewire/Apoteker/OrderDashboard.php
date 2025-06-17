@@ -185,4 +185,5 @@ class OrderDashboard extends Component
                                     // Jika Anda menggunakan Laravel Breeze, ini adalah layout default untuk halaman tanpa login.
                                     // Jika tidak ada `guest.blade.php`, sesuaikan dengan layout non-autentikasi Anda.
     }
+
 }

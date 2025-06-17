@@ -24,3 +24,8 @@ window.Echo.channel('apoteker-channel') // Pastikan nama channel sesuai dengan b
         // Jika Anda ingin memicu event kustom, definisikan di komponen Livewire `getListeners()`
         Livewire.dispatch('orderRefresh'); // Contoh: dispatch event kustom ke Livewire
     });
+window.Echo.channel('filament.orders')
+    .listen('.order.updated', (e) => {  // pastikan event ini sesuai dengan yang di-broadcast backend kamu
+        console.log('Event order.updated diterima di frontend:', e);
+        Livewire.dispatch('orderRefresh');
+    });    

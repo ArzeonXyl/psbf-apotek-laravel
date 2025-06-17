@@ -17,6 +17,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Route; // tambahkan use ini
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -54,5 +55,19 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    public function register(): void
+    {
+        parent::register();
+
+        // Tambahkan route redirect /admin ke /admin/dashboard
+        Route::middleware(['web', 'auth']) // sesuaikan middleware yang kamu pakai
+            ->prefix('admin')
+            ->group(function () {
+                Route::get('/', function () {
+                    return redirect()->route('filament.pages.dashboard');
+                });
+            });
     }
 }
