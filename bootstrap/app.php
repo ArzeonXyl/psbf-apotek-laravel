@@ -12,18 +12,31 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Komentari atau hapus pendaftaran VerySimpleTestMiddleware jika sudah selesai tes:
-        // $middleware->prepend(\App\Http\Middleware\VerySimpleTestMiddleware::class);
+        // Hapus atau komentari prepend RestrictRoutesByPortMiddleware.
+        // $middleware->prepend(\App\Http\Middleware\RestrictRoutesByPortMiddleware::class);
 
-        // Daftarkan RestrictRoutesByPortMiddleware secara global dengan prepend:
-        $middleware->prepend(\App\Http\Middleware\RestrictRoutesByPortMiddleware::class);
+        // Tambahkan RestrictRoutesByPortMiddleware ke group 'web'.
+        // Ini akan menempatkannya setelah middleware standar seperti StartSession, AuthenticateSession, dll.
+        $middleware->web(append: [
+            \App\Http\Middleware\RestrictRoutesByPortMiddleware::class,
+            // Jika Anda memiliki RoleMiddleware yang terdaftar sebagai route middleware,
+            // Anda TIDAK perlu menambahkannya di sini kecuali Anda ingin itu berjalan secara global
+            // untuk setiap rute web yang tidak memiliki middleware 'auth' atau 'role'.
+            // Namun, umumnya RoleMiddleware ditambahkan ke route spesifik (misal: Route::middleware('role:admin')).
+            // Jika RoleMiddleware Anda juga perlu Auth::check() dan Auth::user()->role,
+            // dan Anda mendaftarkannya secara global, itu juga harus di-append.
+            // Contoh: \App\Http\Middleware\RoleMiddleware::class, // HANYA JIKA ANDA INGIN GLOBAL
+        ]);
 
-        // Anda bisa membiarkan $middleware->web(...) kosong atau menghapusnya
-        // jika tidak ada middleware lain yang secara spesifik perlu di-append atau di-prepend ke grup 'web' saat ini.
-        // Misalnya, jika tidak ada middleware lain untuk grup web:
-        // $middleware->web(append: [
-        //     // middleware lain untuk web jika ada
-        // ]);
+        // Opsional: Jika Anda ingin mendaftarkan route middleware baru
+        // atau alias yang digunakan di Route::middleware('nama_alias'),
+        // Anda bisa melakukannya di sini:
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            // Tambahkan alias middleware lainnya jika ada
+        ]);
+
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // ... (konfigurasi exception Anda)

@@ -5,7 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\Order;
-use App\Models\Obat;
+use App\Models\Obat; // Import model Obat
+use App\Models\OrderItem; // Import model OrderItem
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -19,12 +20,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Get; // Untuk mendapatkan value field lain secara reaktif
 use Filament\Forms\Set; // Untuk mengisi value field lain secara reaktif
 use Illuminate\Support\Facades\Auth; // Untuk mendapatkan ID user yang login
 use Filament\Forms\Components\DatePicker; // Import DatePicker untuk filter
+use Illuminate\Support\Facades\DB; // Untuk transaksi database
 
 class OrderResource extends Resource
 {
@@ -44,89 +45,95 @@ class OrderResource extends Resource
                 TextInput::make('customer_name')
                     ->label('Nama Pelanggan')
                     ->maxLength(255)
-                    ->required(), // Menambahkan required, karena nama pelanggan penting
+                    ->required()
+                    ->columnSpanFull(), // Menggunakan seluruh lebar kolom
 
-                Repeater::make('items') // Ini akan berelasi dengan method 'items()' di model Order
-                    ->relationship() // Memberitahu Repeater untuk mengelola relasi
+                Repeater::make('items')
+                    ->relationship() // Memberitahu Repeater untuk mengelola relasi dengan OrderItem
                     ->label('Item Obat')
                     ->schema([
                         Select::make('ID_OBAT')
                             ->label('Nama Obat')
-                            // Pastikan 'ID_OBAT' adalah nama kolom primary key di tabel 'obats'
-                            // Jika primary key adalah 'id', gunakan 'id' di sini.
-                            ->options(Obat::query()->pluck('NAMA_OBAT', 'ID_OBAT')) // Ambil opsi dari model Obat
+                            ->options(Obat::query()->pluck('NAMA_OBAT', 'ID_OBAT')) // Mengambil opsi dari model Obat
                             ->searchable()
                             ->required()
                             ->reactive() // Penting untuk update harga otomatis
                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                                // Ketika obat dipilih, update harga satuan dan hitung sub_total
                                 $obat = Obat::find($state);
                                 if ($obat) {
-                                    // Pastikan 'HARGA' adalah nama kolom harga yang benar di model Obat
-                                    $set('price_at_purchase', $obat->HARGA);
-                                    $quantity = $get('quantity') ?? 1;
-                                    $set('sub_total', $obat->HARGA * $quantity);
+                                    $set('price_at_purchase', (float) $obat->HARGA); // Pastikan float
+                                    $quantity = (int) $get('quantity'); // Ambil kuantitas yang sudah ada (default 1)
+                                    $set('sub_total', (float) ($obat->HARGA * $quantity)); // Hitung sub_total
                                 } else {
-                                    $set('price_at_purchase', 0);
-                                    $set('sub_total', 0);
+                                    // Jika obat tidak ditemukan, set ke 0
+                                    $set('price_at_purchase', 0.00);
+                                    $set('sub_total', 0.00);
                                 }
-                            }),
+                            })
+                            // Dehydrate hanya jika ID_OBAT terisi (ini adalah default Filament, tapi ditegaskan)
+                            ->dehydrated(fn ($state) => filled($state)),
+
                         TextInput::make('quantity')
                             ->label('Jumlah')
                             ->numeric()
                             ->required()
-                            ->default(1)
-                            ->minValue(1)
+                            ->default(1) // Default jumlah adalah 1
+                            ->minValue(1) // Minimal 1
                             ->reactive()
+                            ->live(debounce: 300) // Update secara real-time dengan debounce 300ms
                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                                $price = $get('price_at_purchase');
-                                if ($price && $state) {
-                                    $set('sub_total', $price * $state);
-                                } else {
-                                    $set('sub_total', 0);
-                                }
-                            }),
+                                // Ketika kuantitas berubah, hitung ulang sub_total
+                                $price = (float) $get('price_at_purchase'); // Ambil harga satuan
+                                $quantity = (int) $state; // Ambil kuantitas yang baru
+                                $set('sub_total', (float) ($price * $quantity)); // Hitung sub_total
+                            })
+                            ->dehydrated(), // Pastikan kuantitas tersimpan
+
                         TextInput::make('price_at_purchase')
                             ->label('Harga Satuan')
                             ->numeric()
                             ->prefix('Rp')
-                            ->disabled() // Harga diambil otomatis, jadi disabled
-                            ->dehydrated(), // Agar tetap tersimpan meskipun disabled
+                            ->disabled() // Harga diambil otomatis, tidak bisa diubah
+                            ->dehydrated() // Pastikan nilai tetap tersimpan meskipun disabled
+                            ->default(0.00), // Default 0.00 jika belum ada harga
+
                         TextInput::make('sub_total')
                             ->label('Sub Total')
                             ->numeric()
                             ->prefix('Rp')
-                            ->disabled()
-                            ->dehydrated(),
+                            ->disabled() // Sub total dihitung otomatis, tidak bisa diubah
+                            ->dehydrated() // Pastikan nilai tetap tersimpan meskipun disabled
+                            ->default(0.00), // Default 0.00
                     ])
-                    ->addActionLabel('Tambah Obat')
-                    ->columns(4) // Atur layout repeater
+                    ->addActionLabel('Tambah Obat') // Label tombol tambah item
+                    ->columns(4) // Layout kolom di dalam repeater
                     ->defaultItems(1) // Default ada 1 item saat form dibuka
-                    ->collapsible()
-                    ->cloneable()
-                    ->reorderable(false), // Matikan reorder jika tidak perlu
+                    ->collapsible() // Bisa dilipat
+                    ->cloneable() // Bisa diduplikasi
+                    ->reorderable(false) // Tidak bisa diurutkan ulang
+                    ->live(), // Penting: ini memicu placeholder total untuk update real-time
 
-                // Placeholder untuk Total Keseluruhan (akan dihitung di backend saat save)
+                // Placeholder untuk menampilkan Total Pembayaran sementara (sebelum disimpan)
                 Placeholder::make('total_amount_display')
-                    ->label('Total Sementara (akan dihitung final saat simpan)')
+                    ->label('Total Pembayaran')
                     ->content(function (Get $get): string {
-                        $total = 0;
-                        // Pastikan 'items' adalah array sebelum diiterasi
-                        if (is_array($get('items'))) {
-                            foreach ($get('items') as $item) {
-                                $total += $item['sub_total'] ?? 0;
+                        $total = 0.00; // Inisialisasi dengan float
+                        $items = $get('items'); // Ambil semua item dari repeater
+                        if (is_array($items)) {
+                            foreach ($items as $item) {
+                                // Jumlahkan sub_total dari setiap item, pastikan konversi ke float
+                                $total += (float) ($item['sub_total'] ?? 0.00);
                             }
                         }
-                        return 'Rp ' . number_format($total, 0, ',', '.');
+                        return 'Rp ' . number_format($total, 0, ',', '.'); // Format ke Rupiah
                     })
-                    ->reactive(), // Agar placeholder ini juga ikut update
+                    ->reactive(), // Agar placeholder ini ikut update secara real-time
 
                 Textarea::make('notes')
                     ->label('Catatan Tambahan')
-                    ->columnSpanFull(),
-
-                // Field tersembunyi untuk status dan user_id akan diisi di mutateFormDataBeforeCreate
-                // Tidak perlu ditampilkan di form jika hanya diisi otomatis
-            ])->columns(1); // Atur layout form utama
+                    ->columnSpanFull(), // Menggunakan seluruh lebar kolom
+            ])->columns(1); // Layout kolom untuk form utama
     }
 
     public static function table(Table $table): Table
@@ -135,22 +142,29 @@ class OrderResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('id')->label('ID Order')->sortable(),
                 Tables\Columns\TextColumn::make('customer_name')->label('Nama Pelanggan')->searchable(),
-                Tables\Columns\TextColumn::make('user.name')->label('Kasir')->sortable(), // Menampilkan nama kasir via relasi
-                Tables\Columns\TextColumn::make('total_amount')->money('IDR', locale:'id')->label('Total')->sortable(),
+                Tables\Columns\TextColumn::make('user.name')->label('Kasir')->sortable(), // Menampilkan nama kasir dari relasi
+                Tables\Columns\TextColumn::make('total_amount')
+                    ->label('Total')
+                    ->numeric( // Menggunakan numeric formatter untuk presisi
+                        decimalPlaces: 2,
+                        thousandsSeparator: '.',
+                        decimalSeparator: ','
+                    )
+                    ->money('IDR', locale: 'id') // Format sebagai mata uang IDR
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('status')->badge()->searchable()->sortable()
                     ->color(fn (string $state): string => match ($state) {
-                        'baru' => 'warning',
-                        'diproses_apoteker' => 'info',
-                        'selesai' => 'success',
-                        'dibatalkan' => 'danger',
-                        default => 'gray',
+                        'baru' => 'warning', // Warna badge untuk status 'baru'
+                        'diproses_apoteker' => 'info', // Warna badge untuk status 'diproses_apoteker'
+                        'selesai' => 'success', // Warna badge untuk status 'selesai'
+                        'dibatalkan' => 'danger', // Warna badge untuk status 'dibatalkan'
+                        default => 'gray', // Warna default
                     }),
                 Tables\Columns\TextColumn::make('created_at')->dateTime('d M Y, H:i')->label('Tanggal Order')->sortable(),
-                // Opsional: Kolom update_at untuk melihat kapan terakhir diubah
                 Tables\Columns\TextColumn::make('updated_at')->dateTime('d M Y, H:i')->label('Terakhir Diubah')->sortable(),
             ])
             ->filters([
-                // Filter Status Order
+                // Filter berdasarkan Status Order
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'baru' => 'Baru',
@@ -160,7 +174,7 @@ class OrderResource extends Resource
                     ])
                     ->label('Filter Status'),
 
-                // Filter Tanggal Order (created_at)
+                // Filter berdasarkan Tanggal Order (created_at)
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         DatePicker::make('created_from')
@@ -175,24 +189,73 @@ class OrderResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                // Tables\Actions\DeleteAction::make(), // Jika ingin action delete per baris
+                Tables\Actions\ViewAction::make(), // Action untuk melihat detail order
+                Tables\Actions\EditAction::make(), // Action untuk mengedit order
+                // Action kustom untuk menyelesaikan order dan mengurangi stok
+                Tables\Actions\Action::make('markAsCompleted')
+                    ->label('Selesaikan Order')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation() // Membutuhkan konfirmasi pengguna
+                    ->hidden(fn (Order $record): bool => $record->status === 'selesai' || $record->status === 'dibatalkan') // Sembunyikan jika sudah selesai/dibatalkan
+                    ->action(function (Order $record) {
+                        DB::beginTransaction(); // Memulai transaksi database
+                        try {
+                            // 1. Cek stok sebelum menyelesaikan order
+                            foreach ($record->items as $item) {
+                                $obat = Obat::find($item->ID_OBAT);
+                                if (!$obat || $obat->JUMLAH_STOCK < $item->quantity) {
+                                    DB::rollBack(); // Batalkan transaksi jika stok tidak cukup
+                                    \Filament\Notifications\Notification::make()
+                                        ->title('Gagal Menyelesaikan Order')
+                                        ->body('Stok ' . ($obat ? $obat->NAMA_OBAT : 'Obat') . ' tidak mencukupi untuk order #' . $record->id . '.')
+                                        ->danger()
+                                        ->send();
+                                    return; // Hentikan eksekusi action
+                                }
+                            }
+
+                            // 2. Kurangi stok dan update status
+                            foreach ($record->items as $item) {
+                                $obat = Obat::find($item->ID_OBAT);
+                                if ($obat) { // Pastikan obat ditemukan
+                                    $obat->decrement('JUMLAH_STOCK', $item->quantity); // Kurangi stok
+                                }
+                            }
+
+                            $record->status = 'selesai'; // Ubah status order menjadi 'selesai'
+                            $record->save(); // Simpan perubahan order
+
+                            DB::commit(); // Komit transaksi
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Order Selesai!')
+                                ->body('Order #' . $record->id . ' berhasil diselesaikan. Stok obat telah diperbarui.')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            DB::rollBack(); // Rollback transaksi jika terjadi error
+                            \Filament\Notifications\Notification::make()
+                                ->title('Terjadi Kesalahan')
+                                ->body('Gagal menyelesaikan order: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(), // Mengaktifkan penghapusan massal
                 ]),
             ])
-            ->defaultSort('created_at', 'desc'); // Urutkan berdasarkan terbaru
+            ->defaultSort('created_at', 'desc'); // Urutkan berdasarkan tanggal terbaru
     }
 
     public static function getRelations(): array
     {
         return [
-            // Jika Anda ingin menampilkan detail item order sebagai Relation Manager di halaman View/Edit order,
-            // Anda bisa mengaktifkan ini jika sudah membuat OrderItemsRelationManager.
-            // RelationManagers\OrderItemsRelationManager::class,
+            // Aktifkan ini untuk menampilkan item order di halaman View/Edit order sebagai tab terpisah
+            RelationManagers\ItemsRelationManager::class,
         ];
     }
 
@@ -206,62 +269,44 @@ class OrderResource extends Resource
         ];
     }
 
-    // Method ini akan dipanggil sebelum data form utama disimpan ke tabel 'orders' saat membuat record baru.
-    // Kita gunakan untuk mengisi user_id, status awal, dan menghitung total_amount.
+    // Method ini dipanggil sebelum data form utama disimpan saat membuat record baru.
     public static function mutateFormDataBeforeCreate(array $data): array
     {
         $data['user_id'] = Auth::id(); // Isi dengan ID kasir yang sedang login
         $data['status'] = 'baru'; // Status awal order adalah 'baru'
 
-        // Hitung total_amount dari sub_total semua item
-        $total = 0;
-        // Pastikan $data['items'] ada dan berupa array sebelum iterasi
+        $total = 0.00; // Inisialisasi total dengan float
         if (isset($data['items']) && is_array($data['items'])) {
             foreach ($data['items'] as $item) {
-                // Pastikan 'sub_total' ada di setiap item dan default ke 0 jika tidak ada
-                $total += $item['sub_total'] ?? 0;
+                // Pastikan sub_total diakses dan dikonversi ke float
+                $total += (float) ($item['sub_total'] ?? 0.00);
             }
         }
-        $data['total_amount'] = $total;
+        $data['total_amount'] = $total; // Simpan total akhir
 
         return $data;
     }
 
-    // Method ini akan dipanggil sebelum data form utama disimpan saat mengedit record.
+    // Method ini dipanggil sebelum data form utama disimpan saat mengedit record.
     public static function mutateFormDataBeforeSave(array $data): array
     {
-        // Hitung ulang total_amount jika item diubah saat edit
-        $total = 0;
-        // Pastikan $data['items'] ada dan berupa array sebelum iterasi
+        $total = 0.00; // Inisialisasi total dengan float
         if (isset($data['items']) && is_array($data['items'])) {
             foreach ($data['items'] as $item) {
-                // Pastikan 'sub_total' ada di setiap item dan default ke 0 jika tidak ada
-                $total += $item['sub_total'] ?? 0;
+                // Pastikan sub_total diakses dan dikonversi ke float
+                $total += (float) ($item['sub_total'] ?? 0.00);
             }
         }
-        $data['total_amount'] = $total;
-
-        // Pertimbangkan apakah user_id dan status boleh diubah oleh kasir saat edit.
-        // Jika tidak, Anda bisa menghapus field tersebut dari $data sebelum dikembalikan.
-        // unset($data['user_id']);
-        // unset($data['status']);
+        $data['total_amount'] = $total; // Simpan total akhir
 
         return $data;
     }
 
-    // --- PENTING: TAMBAHKAN METHOD INI UNTUK REAL-TIME REFRESH FILAMENT TABLE ---
-    /**
-     * Mendefinisikan event broadcasting yang akan didengarkan oleh Filament Table.
-     * Ketika event ini terpicu, tabel daftar order akan otomatis di-refresh.
-     *
-     * @return array<string, string>
-     */
+    // Mengaktifkan refresh otomatis tabel daftar order ketika status order berubah (misalnya dari 'baru' ke 'selesai')
     protected static function getLivewireListeningBindings(): array
     {
         return [
-            // Format: 'echo:channel_name,event_name' => '$refresh'
-            // Pastikan 'filament.orders' adalah nama channel yang sama dengan di OrderStatusUpdated event.
-            // Pastikan 'status.updated' adalah nama event broadcastAs() dari OrderStatusUpdated event.
+            // Mendengarkan event 'status.updated' pada channel 'filament.orders'
             'echo:filament.orders,status.updated' => '$refresh',
         ];
     }

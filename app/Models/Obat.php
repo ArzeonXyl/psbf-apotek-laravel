@@ -21,6 +21,7 @@ class Obat extends Model
         'HARGA',
         'EXP',
         'ID_SUPPLIER',
+        'gambar',
     ];
 
     /**

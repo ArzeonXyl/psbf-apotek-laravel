@@ -17,6 +17,7 @@ class Order extends Model
         'total_amount',
         'status',
         'notes',
+        'qr_code_path',
     ];
 
     protected $casts = [

@@ -1,0 +1,113 @@
+/* resources/css/toko.css */
+
+/* HAPUS blok CSS .wave-background sebelumnya karena kita akan menggunakan SVG untuk gelombang */
+/* .wave-background {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 0;
+    background: linear-gradient(to bottom, var(--primary-light), var(--primary-dark));
+    height: 180px;
+    border-top-left-radius: 50% 100px;
+    border-top-right-radius: 50% 100px;
+} */
+
+
+/* --- CSS BARU UNTUK SVG WAVE (seperti yang sudah saya berikan sebelumnya) --- */
+.wave-svg-container {
+    height: 150px; /* Sesuaikan tinggi gelombang SVG ini */
+    bottom: -1px; /* Bantu menutup celah kecil di bawah */
+    /* Pastikan position: absolute, left: 0, width: 100%, z-index: 0 sudah ada di kelas Tailwind di HTML */
+    /* Hapus 'overflow-hidden' dari sini untuk debugging sementara, nanti bisa dikembalikan jika perlu */
+    /* Kalau di HTML sudah ada class `overflow-hidden`, biarkan dulu */
+    /* Pastikan tidak ada "width: 100;" yang salah di sini. Itu sudah dihapus. */
+;
+}
+
+.wave-svg-container svg {
+    display: block;
+    width: (100% + 2px); /* <-- PERUBAHAN UTAMA: Tambahkan sedikit lebar */
+    /* Ini akan membuat SVG sedikit lebih lebar dari kontainernya untuk memastikan full */
+    height: 100%;
+}
+
+.wave-svg-container .shape-fill {
+    fill: white; /* Sesuaikan warna */
+}
+
+/* --- Button Styles (ini sudah bagus dan tidak perlu diubah lagi) --- */
+
+.btn-primary {
+    background-color: theme('colors.primary.dark');
+    color: theme('colors.white');
+}
+.btn-primary:hover {
+    background-color: theme('colors.primary.DEFAULT');
+}
+
+.btn-secondary {
+    background-color: theme('colors.accent');
+    color: theme('colors.gray.900');
+}
+.btn-secondary:hover {
+    background-color: #facc15;
+}
+
+.btn-outline-white {
+    border: 2px solid theme('colors.white');
+    color: theme('colors.white');
+}
+.btn-outline-white:hover {
+    background-color: theme('colors.white');
+    color: theme('colors.primary.dark');
+}
+
+/* --- NEW: CSS UNTUK LINGKARAN TERPOTONG --- */
+.circle-half-top-right {
+    width: 150px;  /* Lebar wadah */
+    height: 75px;  /* Setengah dari lebar untuk setengah lingkaran */
+    overflow: hidden;
+    background-color: transparent; /* Kontainer transparan */
+}
+
+.circle-half-top-right .circle-inner {
+    width: 150px;  /* Sama dengan lebar wadah */
+    height: 150px; /* Sama dengan dua kali tinggi wadah */
+    border-radius: 50%; /* Membuat lingkaran */
+    background-color: rgba(255, 255, 255, 0.2); /* Warna lingkaran (putih transparan) */
+}
+
+.circle-half-bottom-left {
+    width: 150px;
+    height: 75px;
+    overflow: hidden;
+    background-color: transparent; /* Kontainer transparan */
+    transform: rotate(180deg); /* Memutar untuk setengah lingkaran terbalik */
+}
+
+.circle-half-bottom-left .circle-inner {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2); /* Warna lingkaran (putih transparan) */
+}
+
+/* Anda bisa menambahkan kelas untuk lingkaran terpotong sebagian lainnya jika diperlukan */
+/* Contoh: Lingkaran utuh tapi hanya sebagian yang terlihat */
+.circle-partial-example {
+    width: 100px;
+    height: 100px; /* Misal ukuran wadah 100x100 */
+    overflow: hidden;
+    position: relative; /* Wadah harus relative jika inner circle di absolute */
+}
+
+.circle-partial-example .circle-inner-full {
+    width: 200px;  /* Ukuran lingkaran sebenarnya, dua kali ukuran wadah */
+    height: 200px;
+    border-radius: 50%;
+    background-color: rgba(255, 0, 0, 0.5); /* Merah transparan */
+    position: absolute;
+    top: -50px; /* Geser ke atas agar sebagian terlihat */
+    left: -50px; /* Geser ke kiri agar sebagian terlihat */
+}
