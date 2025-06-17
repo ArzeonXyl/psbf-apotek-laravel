@@ -180,7 +180,7 @@ class OrderDashboard extends Component
 
         return view('livewire.apoteker.order-dashboard', [
             'newOrders' => $newOrders,
-        ])->layout('layouts.guest'); // Menggunakan layout Blade `resources/views/layouts/guest.blade.php`.
+        ])->layout('layouts.dashboard-layout'); // Menggunakan layout Blade `resources/views/layouts/guest.blade.php`.
                                     // PENTING: Pastikan file `resources/views/layouts/guest.blade.php` ada.
                                     // Jika Anda menggunakan Laravel Breeze, ini adalah layout default untuk halaman tanpa login.
                                     // Jika tidak ada `guest.blade.php`, sesuaikan dengan layout non-autentikasi Anda.
