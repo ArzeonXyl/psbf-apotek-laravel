@@ -26,7 +26,7 @@ class RestrictRoutesByPortMiddleware
         // --- ATURAN BERDASARKAN PATH YANG DIAKSES ---
 
         // 1. Jika mencoba akses area ADMIN/KASIR (Filament)
-        if ($request->is('admin') || $request->is('admin/*')) {
+        if ($request->is('admin') || $request->is('admin/*')|| $request->is('/')) {
             // Area ini HANYA boleh diakses via port 8000
             if ($port !== 8000) {
                 Log::warning("RestrictMiddleware: BLOCKED - Admin path '{$path}' accessed on wrong port {$port}.");
