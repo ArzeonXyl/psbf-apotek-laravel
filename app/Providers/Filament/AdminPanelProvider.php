@@ -18,6 +18,9 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Illuminate\Support\Facades\Route; // tambahkan use ini
+// ... (use statements lain) ...
+use Filament\Support\Facades\FilamentView; // <-- Tambahkan ini
+use Filament\View\PanelsRenderHook;      // <-- Tambahkan ini
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -69,5 +72,14 @@ class AdminPanelProvider extends PanelProvider
                     return redirect()->route('filament.pages.dashboard');
                 });
             });
+    }
+    public function boot(): void
+    {
+        FilamentView::registerRenderHook(
+            // Render hook untuk menyisipkan script sebelum tag </body> berakhir
+            PanelsRenderHook::BODY_END,
+            // Mengembalikan view Blade yang berisi script kita
+            fn (): string => view('filament.hooks.reverb-listener-script'),
+        );
     }
 }

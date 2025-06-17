@@ -111,4 +111,15 @@
             </div>
         @endif
     </div>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800">Daftar Order Baru Masuk (Apoteker)</h2>
+
+            {{-- === TAMBAHKAN TOMBOL TES DI SINI === --}}
+            <button wire:click="sendTestNotificationToKasir" 
+                    class="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700">
+                Kirim Notifikasi Tes ke Kasir
+            </button>
+            {{-- ====================================== --}}
+        </div>
 </div>
+{{-- resources/views/livewire/apoteker/order-dashboard.blade.php --}}

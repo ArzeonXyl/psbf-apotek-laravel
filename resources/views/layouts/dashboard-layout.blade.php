@@ -17,7 +17,7 @@
         1. PERBAIKAN: x-data sekarang dikelola oleh Alpine.js saja, tidak lagi di-entangle ke Livewire.
            Ini membuat state buka-tutup sidebar murni di sisi klien dan instan.
     --}}
-    <div x-data="{ sidebarOpen: false }" @keydown.escape.window="sidebarOpen = false" class="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900">
+    <div x-data="{ sidebarOpen: false }" @keydown.escape.window="sidebarOpen = false" class="h-screen flex overflow-hidden bg-primary:bg-primary">
         
         {{-- 
             2. PERBAIKAN: Logika class diubah untuk menggunakan animasi slide (translate)

@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 
     @vite(['resources/css/app.css', 'resources/css/toko.css', 'resources/js/app.js'])
     @livewireStyles
@@ -20,8 +21,7 @@
         {{-- Navbar UTAMA (Hanya di sini) --}}
         <nav class="relative z-10 flex items-center justify-between px-8 py-4 bg-white shadow-md">
             <div class="flex items-center space-x-2">
-                <i class="fas fa-prescription-bottle-alt text-2xl text-primary-dark"></i>
-                <a href="{{ route('toko.landing') }}" class="text-2xl font-bold text-gray-800">Apotek Sehat</a>
+                <img src="{{ 'storage/img/Logo-gambar.png' }}" alt="" class="w-48 h-16">
             </div>
             <div class="hidden md:flex space-x-8">
                 <a href="{{ route('toko.landing') }}" class="text-gray-600 hover:text-primary-dark font-medium">Home</a>

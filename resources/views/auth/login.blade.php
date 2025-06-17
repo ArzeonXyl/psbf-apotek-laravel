@@ -18,7 +18,7 @@
                 speed="1"
                 loop
                 autoplay
-                style="width: 400px; height: 400px; margin-bottom: 24px;" {{-- Sesuaikan ukuran dan margin --}}
+                style="width: 200px; height: 200px; margin-bottom: 24px;" {{-- Sesuaikan ukuran dan margin --}}
             ></lottie-player>
 
             <h2 class="text-4xl font-extrabold mb-4 leading-tight">
