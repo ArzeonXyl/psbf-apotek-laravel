@@ -272,6 +272,7 @@ class OrderResource extends Resource
     // Method ini dipanggil sebelum data form utama disimpan saat membuat record baru.
     public static function mutateFormDataBeforeCreate(array $data): array
     {
+        dd(Auth::user());
         $data['user_id'] = Auth::id(); // Isi dengan ID kasir yang sedang login
         $data['status'] = 'baru'; // Status awal order adalah 'baru'
 

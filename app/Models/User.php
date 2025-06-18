@@ -54,4 +54,5 @@ class User extends Authenticatable implements FilamentUser // Implementasikan Fi
         }
         return false;
     }
+    
 }

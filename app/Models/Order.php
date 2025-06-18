@@ -26,8 +26,9 @@ class Order extends Model
 
     public function user(): BelongsTo // Kasir yang membuat order
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
+    
 
     public function items(): HasMany // Item-item obat dalam order ini
     {
